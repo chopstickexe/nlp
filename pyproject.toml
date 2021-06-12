@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "nlp"
+version = "0.1.0"
+description = "My utilities for NLP and search"
+authors = ["Risa Nishiyama <lisa.nishiyama@gmail.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+
+[tool.poetry.dev-dependencies]
+black = "^21.5b1"
+flake8 = "^3.9.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
