@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "nlp"
+name = "wp_synonyms"
 version = "0.1.0"
-description = "My utilities for NLP and search"
+description = "Create synonym dictionaries from Wikipedia redirect links"
 authors = ["Risa Nishiyama <lisa.nishiyama@gmail.com>"]
 license = "MIT"
 
