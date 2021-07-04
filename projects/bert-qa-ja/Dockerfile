@@ -14,12 +14,12 @@ ARG VENV_DIR=${APP_DIR}/venv
 RUN mkdir ${APP_DIR} && mkdir ${VENV_DIR}
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        wget \
-        curl \
-        vim \
-        # Prerequisite for python3.9
-        software-properties-common \ 
-        locales \
+    wget \
+    curl \
+    vim \
+    # Prerequisite for python3.9
+    software-properties-common \ 
+    locales \
     && localedef -f UTF-8 -i ja_JP ja_JP.UTF-8 \
     && add-apt-repository ppa:deadsnakes/ppa \
     && apt-get install -y python${PYTHON_VER} python3-pip python${PYTHON_VER}-dev python${PYTHON_VER}-venv \
@@ -34,6 +34,15 @@ ENV TZ JST-9
 # Install poetry and make it work with Python${PYTHON_VER} (linked to /usr/bin/python)
 RUN python -m pip install poetry
 ENV POETRY_VIRTUALENVS_PATH=${VENV_DIR}
+
+### Dev stage ###
+FROM base AS dev
+
+ARG ENTRYPOINT=/usr/local/bin/entrypoint.sh
+COPY entrypoint.sh ${ENTRYPOINT}
+RUN chmod +x ${ENTRYPOINT}
+# Note: Cannot use ARG in ENTRYPOINT (because ARG is an argument for build, not for the image...)
+ENTRYPOINT [ "/usr/local/bin/entrypoint.sh" ]
 
 ### Prod stage ###
 FROM base AS prod
