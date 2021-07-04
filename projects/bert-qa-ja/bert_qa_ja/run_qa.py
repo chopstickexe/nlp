@@ -3,8 +3,6 @@ Fine-tuning the library models for question answering.
 
 https://github.com/huggingface/transformers/blob/v4.8.2/examples/pytorch/question-answering/run_qa.py
 """
-# You can also adapt this script on your own question answering task. Pointers for this are left as comments.
-
 import logging
 import os
 import sys
@@ -70,19 +68,19 @@ class ModelArguments:
     cache_dir: Optional[str] = field(
         default=None,
         metadata={
-            "help": "Path to directory to store the pretrained models downloaded from huggingface.co"
+            "help": "Path to directory to store the pretrained models downloaded from huggingface.co"  # noqa: E501
         },
     )
     model_revision: str = field(
         default="main",
         metadata={
-            "help": "The specific model version to use (can be a branch name, tag name or commit id)."
+            "help": "The specific model version to use (can be a branch name, tag name or commit id)."  # noqa: E501
         },
     )
     use_auth_token: bool = field(
         default=False,
         metadata={
-            "help": "Will use the token generated when running `transformers-cli login` (necessary to use this script "
+            "help": "Will use the token generated when running `transformers-cli login` (necessary to use this script "  # noqa: E501
             "with private models)."
         },
     )
@@ -110,7 +108,7 @@ class DataTrainingArguments:
     validation_file: Optional[str] = field(
         default=None,
         metadata={
-            "help": "An optional input evaluation data file to evaluate the perplexity on (a text file)."
+            "help": "An optional input evaluation data file to evaluate the perplexity on (a text file)."  # noqa: E501
         },
     )
     test_file: Optional[str] = field(
@@ -138,28 +136,28 @@ class DataTrainingArguments:
         default=True,
         metadata={
             "help": "Whether to pad all samples to `max_seq_length`. "
-            "If False, will pad the samples dynamically when batching to the maximum length in the batch (which can "
+            "If False, will pad the samples dynamically when batching to the maximum length in the batch (which can "  # noqa: E501
             "be faster on GPU but will be slower on TPU)."
         },
     )
     max_train_samples: Optional[int] = field(
         default=None,
         metadata={
-            "help": "For debugging purposes or quicker training, truncate the number of training examples to this "
+            "help": "For debugging purposes or quicker training, truncate the number of training examples to this "  # noqa: E501
             "value if set."
         },
     )
     max_eval_samples: Optional[int] = field(
         default=None,
         metadata={
-            "help": "For debugging purposes or quicker training, truncate the number of evaluation examples to this "
+            "help": "For debugging purposes or quicker training, truncate the number of evaluation examples to this "  # noqa: E501
             "value if set."
         },
     )
     max_predict_samples: Optional[int] = field(
         default=None,
         metadata={
-            "help": "For debugging purposes or quicker training, truncate the number of prediction examples to this "
+            "help": "For debugging purposes or quicker training, truncate the number of prediction examples to this "  # noqa: E501
             "value if set."
         },
     )
@@ -170,15 +168,15 @@ class DataTrainingArguments:
     null_score_diff_threshold: float = field(
         default=0.0,
         metadata={
-            "help": "The threshold used to select the null answer: if the best answer has a score that is less than "
-            "the score of the null answer minus this threshold, the null answer is selected for this example. "
+            "help": "The threshold used to select the null answer: if the best answer has a score that is less than "  # noqa: E501
+            "the score of the null answer minus this threshold, the null answer is selected for this example. "  # noqa: E501
             "Only useful when `version_2_with_negative=True`."
         },
     )
     doc_stride: int = field(
         default=128,
         metadata={
-            "help": "When splitting up a long document into chunks, how much stride to take between chunks."
+            "help": "When splitting up a long document into chunks, how much stride to take between chunks."  # noqa: E501
         },
     )
     n_best_size: int = field(
@@ -190,7 +188,7 @@ class DataTrainingArguments:
     max_answer_length: int = field(
         default=30,
         metadata={
-            "help": "The maximum length of an answer that can be generated. This is needed because the start "
+            "help": "The maximum length of an answer that can be generated. This is needed because the start "  # noqa: E501
             "and end predictions are not conditioned on one another."
         },
     )
@@ -226,7 +224,7 @@ class DataTrainingArguments:
                 ], "`test_file` should be a csv or a json file."
 
 
-def main():
+def __parse_args():
     # See all possible arguments in src/transformers/training_args.py
     # or by passing the --help flag to this script.
     # We now keep distinct sets of args, for a cleaner separation of concerns.
@@ -242,68 +240,85 @@ def main():
         )
     else:
         model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+    return model_args, data_args, training_args
 
+
+def __setup_logging(training_should_log: bool):
     # Setup logging
     logging.basicConfig(
         format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
         datefmt="%m/%d/%Y %H:%M:%S",
         handlers=[logging.StreamHandler(sys.stdout)],
     )
-    logger.setLevel(logging.INFO if training_args.should_log else logging.WARN)
 
-    # Log on each process the small summary:
-    logger.warning(
-        f"Process rank: {training_args.local_rank}, device: {training_args.device}, n_gpu: {training_args.n_gpu}"
-        + f"distributed training: {bool(training_args.local_rank != -1)}, 16-bits training: {training_args.fp16}"
-    )
+    logger.setLevel(logging.INFO if training_should_log else logging.WARN)
+
     # Set the verbosity to info of the Transformers logger (on main process only):
-    if training_args.should_log:
+    if training_should_log:
         transformers.utils.logging.set_verbosity_info()
         transformers.utils.logging.enable_default_handler()
         transformers.utils.logging.enable_explicit_format()
+
+
+def __log_summary(training_args):
+    # Log on each process the small summary:
+    logger.warning(
+        f"Process rank: {training_args.local_rank}, device: {training_args.device}, n_gpu: {training_args.n_gpu}"  # noqa: E501
+        + f"distributed training: {bool(training_args.local_rank != -1)}, 16-bits training: {training_args.fp16}"  # noqa: E501
+    )
+
     logger.info(f"Training/evaluation parameters {training_args}")
 
-    # Detecting last checkpoint.
-    last_checkpoint = None
+
+def __get_last_checkpoint(training_args):
+    """Get the last checkpoint from the output dir"""
     if (
-        os.path.isdir(training_args.output_dir)
-        and training_args.do_train
-        and not training_args.overwrite_output_dir
+        not os.path.isdir(training_args.output_dir)
+        or not training_args.do_train
+        or training_args.overwrite_output_dir
+        or training_args.resume_from_checkpoint is not None
     ):
-        last_checkpoint = get_last_checkpoint(training_args.output_dir)
-        if last_checkpoint is None and len(os.listdir(training_args.output_dir)) > 0:
-            raise ValueError(
-                f"Output directory ({training_args.output_dir}) already exists and is not empty. "
-                "Use --overwrite_output_dir to overcome."
-            )
-        elif (
-            last_checkpoint is not None and training_args.resume_from_checkpoint is None
-        ):
-            logger.info(
-                f"Checkpoint detected, resuming training at {last_checkpoint}. To avoid this behavior, change "
-                "the `--output_dir` or add `--overwrite_output_dir` to train from scratch."
-            )
+        return None
 
-    # Set seed before initializing model.
-    set_seed(training_args.seed)
+    last_checkpoint = get_last_checkpoint(training_args.output_dir)
+    if last_checkpoint is None and len(os.listdir(training_args.output_dir)) > 0:
+        raise ValueError(
+            f"Output directory ({training_args.output_dir}) already exists and is not empty. "
+            "Use --overwrite_output_dir to overcome."
+        )
 
-    # Get the datasets: you can either provide your own CSV/JSON/TXT training and evaluation files (see below)
-    # or just provide the name of one of the public datasets available on the hub at https://huggingface.co/datasets/
+    logger.info(
+        f"Checkpoint detected, resuming training at {last_checkpoint}. "
+        "To avoid this behavior, change the `--output_dir` "
+        "or add `--overwrite_output_dir` to train from scratch."
+    )
+    return last_checkpoint
+
+
+def __get_datasets(data_args, cache_dir):
+    # Get the datasets: you can either provide your own CSV/JSON/TXT training and evaluation files
+    # (see below)
+    # or just provide the name of one of the public datasets available on the hub at
+    # https://huggingface.co/datasets/
     # (the dataset will be downloaded automatically from the datasets Hub).
     #
-    # For CSV/JSON files, this script will use the column called 'text' or the first column if no column called
-    # 'text' is found. You can easily tweak this behavior (see below).
+    # For CSV/JSON files, this script will use the column called 'text' or the first column
+    # if no column called 'text' is found. You can easily tweak this behavior (see below).
+    # See more about loading any type of standard or custom dataset
+    # (from files, python dict, pandas DataFrame, etc) at
+    # https://huggingface.co/docs/datasets/loading_datasets.html.
     #
-    # In distributed training, the load_dataset function guarantee that only one local process can concurrently
-    # download the dataset.
+    # In distributed training, the load_dataset function guarantee that only one local process
+    # can concurrently download the dataset.
     if data_args.dataset_name is not None:
         # Downloading and loading a dataset from the hub.
         datasets = load_dataset(
             data_args.dataset_name,
             data_args.dataset_config_name,
-            cache_dir=model_args.cache_dir,
+            cache_dir=cache_dir,
         )
     else:
+        # loading a dataset from local files
         data_files = {}
         if data_args.train_file is not None:
             data_files["train"] = data_args.train_file
@@ -319,11 +334,12 @@ def main():
             extension,
             data_files=data_files,
             field="data",
-            cache_dir=model_args.cache_dir,
+            cache_dir=cache_dir,
         )
-    # See more about loading any type of standard or custom dataset (from files, python dict, pandas DataFrame, etc) at
-    # https://huggingface.co/docs/datasets/loading_datasets.html.
+    return datasets
 
+
+def __get_model(model_args):
     # Load pretrained model and tokenizer
     #
     # Distributed training:
@@ -337,6 +353,7 @@ def main():
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
     )
+
     tokenizer = AutoTokenizer.from_pretrained(
         model_args.tokenizer_name
         if model_args.tokenizer_name
@@ -346,6 +363,15 @@ def main():
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
     )
+    # Tokenizer check: this script requires a fast tokenizer.
+    if not isinstance(tokenizer, PreTrainedTokenizerFast):
+        raise ValueError(
+            "This example script only works for models that have a fast tokenizer. "
+            "Checkout the big table of models "
+            "at https://huggingface.co/transformers/index.html#supported-frameworks "
+            "to find the model types that meet this requirement"
+        )
+
     model = AutoModelForQuestionAnswering.from_pretrained(
         model_args.model_name_or_path,
         from_tf=bool(".ckpt" in model_args.model_name_or_path),
@@ -354,14 +380,21 @@ def main():
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
     )
+    return tokenizer, model
 
-    # Tokenizer check: this script requires a fast tokenizer.
-    if not isinstance(tokenizer, PreTrainedTokenizerFast):
-        raise ValueError(
-            "This example script only works for models that have a fast tokenizer. Checkout the big table of models "
-            "at https://huggingface.co/transformers/index.html#supported-frameworks to find the model types that meet this "
-            "requirement"
-        )
+
+def main():
+    model_args, data_args, training_args = __parse_args()
+    __setup_logging(training_args.should_log)
+    __log_summary(training_args)
+
+    last_checkpoint = __get_last_checkpoint()
+
+    # Set seed before initializing model.
+    set_seed(training_args.seed)
+
+    datasets = __get_datasets(data_args, model_args.cache_dir)
+    tokenizer, model = __get_model(model_args)
 
     # Preprocessing the datasets.
     # Preprocessing is slighlty different for training and evaluation.
@@ -380,16 +413,19 @@ def main():
 
     if data_args.max_seq_length > tokenizer.model_max_length:
         logger.warning(
-            f"The max_seq_length passed ({data_args.max_seq_length}) is larger than the maximum length for the"
-            f"model ({tokenizer.model_max_length}). Using max_seq_length={tokenizer.model_max_length}."
+            f"The max_seq_length passed ({data_args.max_seq_length}) is larger than "
+            f"the maximum length for the model ({tokenizer.model_max_length}). "
+            f"Using max_seq_length={tokenizer.model_max_length}."
         )
     max_seq_length = min(data_args.max_seq_length, tokenizer.model_max_length)
 
     # Training preprocessing
     def prepare_train_features(examples):
-        # Tokenize our examples with truncation and maybe padding, but keep the overflows using a stride. This results
-        # in one example possible giving several features when a context is long, each of those features having a
-        # context that overlaps a bit the context of the previous feature.
+        # Tokenize our examples with truncation and maybe padding,
+        # but keep the overflows using a stride.
+        # This results in one example possible giving several features when a context is long,
+        # each of those features having a context that overlaps a bit
+        # the context of the previous feature.
         tokenized_examples = tokenizer(
             examples[question_column_name if pad_on_right else context_column_name],
             examples[context_column_name if pad_on_right else question_column_name],
@@ -401,11 +437,11 @@ def main():
             padding="max_length" if data_args.pad_to_max_length else False,
         )
 
-        # Since one example might give us several features if it has a long context, we need a map from a feature to
-        # its corresponding example. This key gives us just that.
+        # Since one example might give us several features if it has a long context,
+        # we need a map from a feature to its corresponding example. This key gives us just that.
         sample_mapping = tokenized_examples.pop("overflow_to_sample_mapping")
-        # The offset mappings will give us a map from token to character position in the original context. This will
-        # help us compute the start_positions and end_positions.
+        # The offset mappings will give us a map from token to character position in the original
+        # context. This will help us compute the start_positions and end_positions.
         offset_mapping = tokenized_examples.pop("offset_mapping")
 
         # Let's label those examples!
@@ -417,10 +453,12 @@ def main():
             input_ids = tokenized_examples["input_ids"][i]
             cls_index = input_ids.index(tokenizer.cls_token_id)
 
-            # Grab the sequence corresponding to that example (to know what is the context and what is the question).
+            # Grab the sequence corresponding to that example
+            # (to know what is the context and what is the question).
             sequence_ids = tokenized_examples.sequence_ids(i)
 
-            # One example can give several spans, this is the index of the example containing this span of text.
+            # One example can give several spans, this is the index of the example
+            # containing this span of text.
             sample_index = sample_mapping[i]
             answers = examples[answer_column_name][sample_index]
             # If no answers are given, set the cls_index as answer.
@@ -442,7 +480,8 @@ def main():
                 while sequence_ids[token_end_index] != (1 if pad_on_right else 0):
                     token_end_index -= 1
 
-                # Detect if the answer is out of the span (in which case this feature is labeled with the CLS index).
+                # Detect if the answer is out of the span
+                # (in which case this feature is labeled with the CLS index).
                 if not (
                     offsets[token_start_index][0] <= start_char
                     and offsets[token_end_index][1] >= end_char
@@ -450,8 +489,10 @@ def main():
                     tokenized_examples["start_positions"].append(cls_index)
                     tokenized_examples["end_positions"].append(cls_index)
                 else:
-                    # Otherwise move the token_start_index and token_end_index to the two ends of the answer.
-                    # Note: we could go after the last offset if the answer is the last word (edge case).
+                    # Otherwise move the token_start_index and token_end_index
+                    # to the two ends of the answer.
+                    # Note: we could go after the last offset if the answer is the last word
+                    # (edge case).
                     while (
                         token_start_index < len(offsets)
                         and offsets[token_start_index][0] <= start_char
@@ -481,13 +522,15 @@ def main():
             desc="Running tokenizer on train dataset",
         )
         if data_args.max_train_samples is not None:
-            # Number of samples might increase during Feature Creation, We select only specified max samples
+            # Number of samples might increase during Feature Creation,
+            # We select only specified max samples
             train_dataset = train_dataset.select(range(data_args.max_train_samples))
 
     # Validation preprocessing
     def prepare_validation_features(examples):
-        # Tokenize our examples with truncation and maybe padding, but keep the overflows using a stride. This results
-        # in one example possible giving several features when a context is long, each of those features having a
+        # Tokenize our examples with truncation and maybe padding, but keep the overflows
+        # using a stride. This results in one example possible giving several features
+        # when a context is long, each of those features having a
         # context that overlaps a bit the context of the previous feature.
         tokenized_examples = tokenizer(
             examples[question_column_name if pad_on_right else context_column_name],
@@ -500,25 +543,27 @@ def main():
             padding="max_length" if data_args.pad_to_max_length else False,
         )
 
-        # Since one example might give us several features if it has a long context, we need a map from a feature to
-        # its corresponding example. This key gives us just that.
+        # Since one example might give us several features if it has a long context,
+        # we need a map from a feature to its corresponding example. This key gives us just that.
         sample_mapping = tokenized_examples.pop("overflow_to_sample_mapping")
 
-        # For evaluation, we will need to convert our predictions to substrings of the context, so we keep the
-        # corresponding example_id and we will store the offset mappings.
+        # For evaluation, we will need to convert our predictions to substrings of the context,
+        # so we keep the corresponding example_id and we will store the offset mappings.
         tokenized_examples["example_id"] = []
 
         for i in range(len(tokenized_examples["input_ids"])):
-            # Grab the sequence corresponding to that example (to know what is the context and what is the question).
+            # Grab the sequence corresponding to that example (to know what is the context
+            # and what is the question).
             sequence_ids = tokenized_examples.sequence_ids(i)
             context_index = 1 if pad_on_right else 0
 
-            # One example can give several spans, this is the index of the example containing this span of text.
+            # One example can give several spans, this is the index of the example
+            # containing this span of text.
             sample_index = sample_mapping[i]
             tokenized_examples["example_id"].append(examples["id"][sample_index])
 
-            # Set to None the offset_mapping that are not part of the context so it's easy to determine if a token
-            # position is part of the context or not.
+            # Set to None the offset_mapping that are not part of the context
+            # so it's easy to determine if a token position is part of the context or not.
             tokenized_examples["offset_mapping"][i] = [
                 (o if sequence_ids[k] == context_index else None)
                 for k, o in enumerate(tokenized_examples["offset_mapping"][i])
@@ -543,7 +588,8 @@ def main():
             desc="Running tokenizer on validation dataset",
         )
         if data_args.max_eval_samples is not None:
-            # During Feature creation dataset samples might increase, we will select required samples again
+            # During Feature creation dataset samples might increase,
+            # we will select required samples again
             eval_dataset = eval_dataset.select(range(data_args.max_eval_samples))
 
     if training_args.do_predict:
@@ -565,14 +611,15 @@ def main():
             desc="Running tokenizer on prediction dataset",
         )
         if data_args.max_predict_samples is not None:
-            # During Feature creation dataset samples might increase, we will select required samples again
+            # During Feature creation dataset samples might increase,
+            # we will select required samples again
             predict_dataset = predict_dataset.select(
                 range(data_args.max_predict_samples)
             )
 
     # Data collator
-    # We have already padded to max length if the corresponding flag is True, otherwise we need to pad in the data
-    # collator.
+    # We have already padded to max length if the corresponding flag is True,
+    # otherwise we need to pad in the data collator.
     data_collator = (
         default_data_collator
         if data_args.pad_to_max_length
@@ -583,7 +630,8 @@ def main():
 
     # Post-processing:
     def post_processing_function(examples, features, predictions, stage="eval"):
-        # Post-processing: we match the start logits and end logits to answers in the original context.
+        # Post-processing: we match the start logits and end logits
+        # to answers in the original context.
         predictions = postprocess_qa_predictions(
             examples=examples,
             features=features,
